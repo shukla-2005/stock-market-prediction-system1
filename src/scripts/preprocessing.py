@@ -49,4 +49,4 @@ if __name__ == "__main__":
     news_df = preprocess_news_data('data/AAPL_news_data.csv')
     news_df.to_csv('data/AAPL_news_sentiment.csv')
 
-    print("Preprocessing completed.")
+    print("Preprocessing completed.")445e201582f94a40b6ca848c9fc89ed7
