@@ -29,7 +29,7 @@ def get_stock_data(ticker, start_date, end_date):
             return pd.DataFrame()
 
 # NewsAPI for news data
-def get_news_data(query, from_date, to_date, api_key, max_days=30):
+def get_news_data(query, from_date, to_date, api_key, max_days=25):
     if api_key is None:
         raise ValueError("NEWS_API_KEY is not set in the environment.")
 
@@ -39,6 +39,8 @@ def get_news_data(query, from_date, to_date, api_key, max_days=30):
     from_dt = datetime.strptime(from_date, "%Y-%m-%d")
     if from_dt < min_allowed:
         from_dt = min_allowed
+
+    print(f"Fetching news from {from_dt.strftime('%Y-%m-%d')} to {to_dt.strftime('%Y-%m-%d')} (max {max_days} days)")
 
     newsapi = NewsApiClient(api_key=api_key)
     all_articles = newsapi.get_everything(
