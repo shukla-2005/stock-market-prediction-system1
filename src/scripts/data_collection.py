@@ -10,8 +10,16 @@ load_dotenv()
 
 # Yahoo Finance for stock data
 def get_stock_data(ticker, start_date, end_date):
-    data = yf.download(ticker, start=start_date, end=end_date)
-    return data
+    try:
+        data = yf.download(ticker, start=start_date, end=end_date)
+        if data.empty:
+            # Fallback to ticker.history if no data returned
+            ticker_obj = yf.Ticker(ticker)
+            data = ticker_obj.history(start=start_date, end=end_date)
+        return data
+    except Exception as e:
+        print(f"WARNING: failed to download {ticker} via yfinance: {e}")
+        return pd.DataFrame()
 
 # NewsAPI for news data
 def get_news_data(query, from_date, to_date, api_key):
