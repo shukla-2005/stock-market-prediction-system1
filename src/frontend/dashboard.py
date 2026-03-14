@@ -3,10 +3,21 @@ import requests
 import pandas as pd
 import plotly.graph_objects as go
 from datetime import datetime
+import os
 
-API_BASE = "http://localhost:8000"
+API_BASE = os.getenv("API_BASE", "http://localhost:8000")
 
 st.title("AI Powered Stock Market Prediction Dashboard")
+
+# Health check
+try:
+    response = requests.get(f"{API_BASE}/docs", timeout=5)  # or /health if exists
+    if response.status_code != 200:
+        st.error("Backend API is not available. Please start the backend server.")
+        st.stop()
+except requests.exceptions.RequestException:
+    st.error("Cannot connect to backend API. Please check if the server is running.")
+    st.stop()
 
 ticker = st.text_input("Enter Stock Ticker (e.g., AAPL)", "AAPL")
 model = st.selectbox("Select Model", ["lr", "rf", "xgb", "lstm", "arima"])

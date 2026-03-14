@@ -42,7 +42,7 @@ def train_lstm(X_train, y_train):
     model.add(Dropout(0.2))
     model.add(Dense(1))
     model.compile(optimizer='adam', loss='mean_squared_error')
-    model.fit(X_train, y_train, epochs=50, batch_size=32, verbose=0)
+    model.fit(X_train, y_train, epochs=5, batch_size=32, verbose=0)
     return model
 
 def train_arima(series):
@@ -65,7 +65,8 @@ def evaluate_model(model, X_test, y_test, model_type):
     return rmse, mae, r2
 
 if __name__ == "__main__":
-    df = pd.read_csv('data/AAPL_preprocessed.csv', index_col='Date', parse_dates=True)
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    df = pd.read_csv(os.path.join(base_dir, 'data', 'AAPL_preprocessed.csv'), index_col='Date', parse_dates=True)
     X, y = prepare_data(df)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
@@ -100,10 +101,12 @@ if __name__ == "__main__":
 
     # Save models
     for name, model in models.items():
-        if name != 'arima':
-            joblib.dump(model, f'models/{name}_model.pkl')
+        if name == 'lstm':
+            model.save(os.path.join(base_dir, 'models', f'{name}_model.h5'))
+        elif name != 'arima':
+            joblib.dump(model, os.path.join(base_dir, 'models', f'{name}_model.pkl'))
         else:
-            arima.save(f'models/arima_model.pkl')
+            model.save(os.path.join(base_dir, 'models', f'{name}_model.pkl'))
 
     # Print results
     for name, (rmse, mae, r2) in results.items():

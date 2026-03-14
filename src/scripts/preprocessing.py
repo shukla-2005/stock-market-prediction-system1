@@ -4,7 +4,8 @@ from sklearn.preprocessing import MinMaxScaler
 import ta
 import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
-from transformers import pipeline
+import joblib
+import os
 
 nltk.download('vader_lexicon')
 
@@ -31,7 +32,6 @@ def preprocess_stock_data(file_path):
 def preprocess_news_data(file_path):
     df = pd.read_csv(file_path)
     sia = SentimentIntensityAnalyzer()
-    sentiment_pipeline = pipeline("sentiment-analysis")
 
     def get_sentiment(text):
         if pd.isna(text):
@@ -43,10 +43,12 @@ def preprocess_news_data(file_path):
     return df[['publishedAt', 'sentiment']]
 
 if __name__ == "__main__":
-    stock_df, scaler = preprocess_stock_data('data/AAPL_stock_data.csv')
-    stock_df.to_csv('data/AAPL_preprocessed.csv')
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    stock_df, scaler = preprocess_stock_data(os.path.join(base_dir, 'data', 'AAPL_stock_data.csv'))
+    stock_df.to_csv(os.path.join(base_dir, 'data', 'AAPL_preprocessed.csv'))
+    joblib.dump(scaler, os.path.join(base_dir, 'models', 'scaler.pkl'))
 
-    news_df = preprocess_news_data('data/AAPL_news_data.csv')
-    news_df.to_csv('data/AAPL_news_sentiment.csv')
+    news_df = preprocess_news_data(os.path.join(base_dir, 'data', 'AAPL_news_data.csv'))
+    news_df.to_csv(os.path.join(base_dir, 'data', 'AAPL_news_sentiment.csv'))
 
-    print("Preprocessing completed.")445e201582f94a40b6ca848c9fc89ed7
+    print("Preprocessing completed.")

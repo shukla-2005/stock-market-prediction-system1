@@ -56,8 +56,8 @@ def get_news_data(query, from_date, to_date, api_key, max_days=25):
 if __name__ == "__main__":
     # Example: Get data for AAPL
     ticker = 'AAPL'
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=365*2)  # 2 years
+    start_date = datetime(2020, 1, 1)
+    end_date = datetime(2023, 12, 31)
 
     # Ensure output directory exists
     os.makedirs('data', exist_ok=True)
