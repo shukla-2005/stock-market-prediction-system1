@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from ml.prediction_engine import PredictionEngine
+from ..ml.prediction_engine import PredictionEngine
 import pandas as pd
 import yfinance as yf
 from datetime import datetime, timedelta

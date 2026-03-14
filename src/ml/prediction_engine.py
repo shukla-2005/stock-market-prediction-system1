@@ -29,13 +29,11 @@ class PredictionEngine:
         return data
 
     def predict(self, ticker, model_name, days_ahead=1):
-        # Get recent data
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=100)
-        data = yf.download(ticker, start=start_date, end=end_date)
-        
-        # Preprocess (match preprocessing.py)
-        data = data[['Open', 'High', 'Low', 'Close', 'Volume']]
+        # For demo, use raw data and preprocess
+        import os
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        df = pd.read_csv(os.path.join(base_dir, 'data', 'AAPL_stock_data.csv'), index_col='Date', parse_dates=True)
+        data = df[['Open', 'High', 'Low', 'Close', 'Volume']].tail(200)  # Use last 200 days
         # Add technical indicators
         import ta
         data['SMA_20'] = ta.trend.sma_indicator(data['Close'], window=20)
