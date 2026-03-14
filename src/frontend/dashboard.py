@@ -28,10 +28,27 @@ ticker = st.sidebar.text_input("Enter Stock Ticker (e.g., AAPL)", "AAPL")
 model = st.sidebar.selectbox("Select Model", ["lr", "rf", "xgb", "lstm", "arima"])
 days = st.sidebar.slider("Days Ahead", 1, 30, 1)
 
-# Load historical data (using local data for demo)
+# Load historical data (use preprocessed file if available)
 @st.cache_data
 def load_stock_data():
-    df = pd.read_csv('data/AAPL_stock_data.csv', index_col='Date', parse_dates=True)
+    # Prefer preprocessed data with indicators
+    preprocessed_path = 'data/AAPL_preprocessed.csv'
+    if os.path.exists(preprocessed_path):
+        df = pd.read_csv(preprocessed_path, index_col='Date', parse_dates=True)
+    else:
+        df = pd.read_csv('data/AAPL_stock_data.csv', index_col='Date', parse_dates=True)
+
+    # If indicators missing, compute on the fly
+    if 'SMA_20' not in df.columns or 'RSI' not in df.columns:
+        try:
+            import ta
+            df['SMA_20'] = ta.trend.sma_indicator(df['Close'], window=20)
+            df['SMA_50'] = ta.trend.sma_indicator(df['Close'], window=50)
+            df['RSI'] = ta.momentum.rsi(df['Close'], window=14)
+            df['MACD'] = ta.trend.macd_diff(df['Close'])
+        except Exception:
+            pass
+
     return df
 
 df = load_stock_data()
@@ -40,28 +57,49 @@ df = load_stock_data()
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    st.subheader("📈 Historical Stock Price")
-    fig_historical = go.Figure()
-    fig_historical.add_trace(go.Scatter(x=df.index, y=df['Close'], mode='lines', name='Close Price', line=dict(color='blue')))
-    fig_historical.add_trace(go.Scatter(x=df.index, y=df['SMA_20'], mode='lines', name='SMA 20', line=dict(color='orange', dash='dash')))
-    fig_historical.add_trace(go.Scatter(x=df.index, y=df['SMA_50'], mode='lines', name='SMA 50', line=dict(color='red', dash='dash')))
-    fig_historical.update_layout(title=f"{ticker} Historical Price & Moving Averages", xaxis_title="Date", yaxis_title="Price ($)")
-    st.plotly_chart(fig_historical, use_container_width=True)
+    st.subheader("📈 Candlestick + Volume")
+    last_n = st.slider("Days to display", 30, 180, 90, key="candles")
+    df_tail = df.tail(last_n)
+
+    from plotly.subplots import make_subplots
+
+    fig_candle = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.7, 0.3], vertical_spacing=0.03)
+    fig_candle.add_trace(go.Candlestick(
+        x=df_tail.index,
+        open=df_tail['Open'],
+        high=df_tail['High'],
+        low=df_tail['Low'],
+        close=df_tail['Close'],
+        name='Price'), row=1, col=1)
+
+    fig_candle.add_trace(go.Bar(x=df_tail.index, y=df_tail['Volume'], name='Volume', marker_color='lightblue'), row=2, col=1)
+
+    fig_candle.update_layout(
+        title=f"{ticker} Candlestick + Volume", 
+        xaxis=dict(rangeslider=dict(visible=False)),
+        yaxis_title="Price ($)",
+        yaxis2_title="Volume",
+        legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1)
+    )
+    st.plotly_chart(fig_candle, use_container_width=True)
 
 with col2:
     st.subheader("📊 Technical Indicators")
-    fig_indicators = go.Figure()
-    fig_indicators.add_trace(go.Scatter(x=df.index, y=df['RSI'], mode='lines', name='RSI', line=dict(color='purple')))
-    fig_indicators.add_hline(y=70, line_dash="dash", line_color="red", annotation_text="Overbought")
-    fig_indicators.add_hline(y=30, line_dash="dash", line_color="green", annotation_text="Oversold")
-    fig_indicators.update_layout(title="RSI Indicator", xaxis_title="Date", yaxis_title="RSI")
-    st.plotly_chart(fig_indicators, use_container_width=True)
 
-    # Volume chart
-    fig_volume = go.Figure()
-    fig_volume.add_trace(go.Bar(x=df.index, y=df['Volume'], name='Volume', marker_color='lightblue'))
-    fig_volume.update_layout(title="Trading Volume", xaxis_title="Date", yaxis_title="Volume")
-    st.plotly_chart(fig_volume, use_container_width=True)
+    fig_rsi = go.Figure()
+    fig_rsi.add_trace(go.Scatter(x=df.index, y=df['RSI'], mode='lines', name='RSI', line=dict(color='purple')))
+    fig_rsi.add_hline(y=70, line_dash="dash", line_color="red", annotation_text="Overbought")
+    fig_rsi.add_hline(y=30, line_dash="dash", line_color="green", annotation_text="Oversold")
+    fig_rsi.update_layout(title="RSI Indicator", xaxis_title="Date", yaxis_title="RSI")
+    st.plotly_chart(fig_rsi, use_container_width=True)
+
+    fig_macd = go.Figure()
+    if 'MACD' in df.columns:
+        fig_macd.add_trace(go.Scatter(x=df.index, y=df['MACD'], mode='lines', name='MACD', line=dict(color='green')))
+        fig_macd.update_layout(title="MACD", xaxis_title="Date", yaxis_title="MACD")
+        st.plotly_chart(fig_macd, use_container_width=True)
+    else:
+        st.info("MACD not available in dataset.")
 
 # Prediction section
 st.header("🔮 Price Prediction")
@@ -126,7 +164,6 @@ if st.button("Compare All Models"):
 # Footer
 st.markdown("---")
 st.markdown("Built with ❤️ using Streamlit, FastAPI, and AI models")
-        st.error(f"Error: {e}")
 
 st.sidebar.header("About")
 st.sidebar.info("This dashboard uses AI models to predict stock prices and provide buy/sell signals.")
