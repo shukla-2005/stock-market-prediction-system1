@@ -57,7 +57,10 @@ class PredictionEngine:
             pred_array = np.zeros((1, 9))
             pred_array[0, 3] = pred[0] if model_name == 'lstm' else pred  # Close is at index 3
             pred = self.scaler.inverse_transform(pred_array)[0, 3]
-        return pred
+        
+        # Get current price from data
+        current = data['Close'].iloc[-1]
+        return pred, current
 
     def get_buy_sell_signal(self, current_price, predicted_price):
         if predicted_price > current_price * 1.02:

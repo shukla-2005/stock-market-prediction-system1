@@ -36,11 +36,7 @@ def get_stock_data(ticker: str):
 @app.post("/predict")
 def predict(request: PredictionRequest):
     try:
-        pred = engine.predict(request.ticker, request.model, request.days_ahead)
-        history = yf.Ticker(request.ticker).history(period='1d')
-        if history.empty:
-            raise HTTPException(status_code=400, detail="No data available for this ticker")
-        current = history['Close'].iloc[-1]
+        pred, current = engine.predict(request.ticker, request.model, request.days_ahead)
         signal = engine.get_buy_sell_signal(current, pred)
         return {"prediction": pred, "current": current, "signal": signal}
     except Exception as e:
